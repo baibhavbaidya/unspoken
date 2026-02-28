@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export function Navbar() {
   const { user, logOut } = useAuth();
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await logOut();
     router.push('/');
+    setMenuOpen(false);
   };
 
   return (
@@ -52,13 +55,14 @@ export function Navbar() {
             Unspoken
           </span>
         </Link>
-        
-        <div className="flex items-center gap-6">
+
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-6">
           {!user ? (
             <>
               <Link
-                href="/auth/signup" 
-                className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground md:block"
+                href="/auth/signup"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Explore Bottles
               </Link>
@@ -71,16 +75,10 @@ export function Navbar() {
             </>
           ) : (
             <>
-              <Link
-                href="/dashboard"
-                className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground md:block"
-              >
+              <Link href="/dashboard" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Dashboard
               </Link>
-              <Link
-                href="/bottles"
-                className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground md:block"
-              >
+              <Link href="/bottles" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Bottles
               </Link>
               <Link
@@ -91,7 +89,7 @@ export function Navbar() {
               </Link>
               <button
                 onClick={handleSignOut}
-                className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground md:block"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 Sign Out
               </button>
@@ -101,7 +99,70 @@ export function Navbar() {
             </>
           )}
         </div>
+
+        {/* Mobile: avatar + hamburger */}
+        <div className="flex items-center gap-3 md:hidden">
+          {user && (
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+              {user.email?.[0].toUpperCase()}
+            </div>
+          )}
+          {!user && (
+            <Link
+              href="/auth/login"
+              className="rounded-lg bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90"
+            >
+              Sign In
+            </Link>
+          )}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="flex flex-col gap-1.5 p-1 text-foreground"
+            aria-label="Toggle menu"
+          >
+            <span className={`block h-0.5 w-5 bg-current transition-transform duration-200 ${menuOpen ? 'translate-y-2 rotate-45' : ''}`} />
+            <span className={`block h-0.5 w-5 bg-current transition-opacity duration-200 ${menuOpen ? 'opacity-0' : ''}`} />
+            <span className={`block h-0.5 w-5 bg-current transition-transform duration-200 ${menuOpen ? '-translate-y-2 -rotate-45' : ''}`} />
+          </button>
+        </div>
       </nav>
+
+      {/* Mobile menu dropdown */}
+      {menuOpen && (
+        <div className="md:hidden border-t border-border/40 bg-background/95 px-6 py-4 flex flex-col gap-4">
+          {!user ? (
+            <Link
+              href="/auth/signup"
+              onClick={() => setMenuOpen(false)}
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Explore Bottles
+            </Link>
+          ) : (
+            <>
+              <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                Dashboard
+              </Link>
+              <Link href="/bottles" onClick={() => setMenuOpen(false)} className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                Bottles
+              </Link>
+              <Link
+                href="/create"
+                onClick={() => setMenuOpen(false)}
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Create Message
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="text-left text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Sign Out
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </header>
   );
 }

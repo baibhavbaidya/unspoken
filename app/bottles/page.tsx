@@ -93,7 +93,7 @@ export default function BottlesPage() {
       <main className="mx-auto max-w-7xl px-6 py-8 md:py-12">
         {/* Header */}
         <div className="mb-8">
-          <div className="mb-6 flex items-end justify-between">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h1 className="font-serif text-3xl font-medium text-foreground sm:text-4xl md:text-5xl">
                 Message in a Bottle
@@ -106,7 +106,7 @@ export default function BottlesPage() {
             {user && (
               <button
                 onClick={() => router.push('/bottles/create')}
-                className="group inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-all hover:shadow-lg hover:-translate-y-0.5"
+                className="group inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-all hover:shadow-lg hover:-translate-y-0.5 self-start sm:self-auto"
               >
                 <Plus className="h-4 w-4" />
                 Share Your Message

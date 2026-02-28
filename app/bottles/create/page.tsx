@@ -123,7 +123,7 @@ export default function CreateBottlePage() {
               Back
             </button>
             <h1 className="mb-3 text-4xl font-bold text-foreground">
-              🌊 Release a Message in a Bottle
+              Release a Message in a Bottle
             </h1>
             <p className="text-lg text-muted-foreground">
               Share your story anonymously to help others feel less alone

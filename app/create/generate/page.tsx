@@ -56,6 +56,10 @@ export default function GeneratePage() {
       
       setMessageType(msgType);
 
+      if (!user?.uid) {
+        throw new Error('User not authenticated');
+      }
+
       console.log('Generating messages with Q&A history:', qaHistory);
 
       // Call API to generate messages

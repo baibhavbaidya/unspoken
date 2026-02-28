@@ -13,7 +13,7 @@ export default function HomePage() {
 
   useEffect(() => {
     // Only redirect if user exists AND we haven't redirected yet
-    if (user && !hasRedirected.current) {
+    if (!loading && user && !hasRedirected.current) {
       hasRedirected.current = true;
       router.push('/create');
     }
@@ -22,7 +22,7 @@ export default function HomePage() {
     if (!user) {
       hasRedirected.current = false;
     }
-  }, [user, router]);
+  }, [user, loading, router]);
 
   // Show loading while checking auth
   if (loading) {
