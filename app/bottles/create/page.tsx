@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -20,7 +19,7 @@ const categories = [
   { id: 'breaking_free', label: 'Breaking Free', icon: Sparkles, description: 'Liberation and new beginnings', color: 'bg-purple-100 text-purple-600 hover:bg-purple-50' },
 ];
 
-export default function CreateBottlePage() {
+function CreateBottleForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const messageId = searchParams.get('messageId');
@@ -69,7 +68,6 @@ export default function CreateBottlePage() {
     setLoading(true);
 
     try {
-      // Create bottle
       await addDoc(collection(db, 'bottles'), {
         userId: user?.uid,
         category: category,
@@ -233,7 +231,6 @@ export default function CreateBottlePage() {
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
           <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-            {/* Modal Body */}
             <div className="p-8 text-center">
               <div className="mb-4 text-6xl animate-bounce">🌊</div>
               <h3 className="mb-2 text-2xl font-bold text-foreground">
@@ -243,8 +240,6 @@ export default function CreateBottlePage() {
                 Your words are now floating in the ocean for others to find and relate to.
               </p>
             </div>
-
-            {/* Loading Indicator */}
             <div className="border-t border-border bg-muted/50 px-8 py-4">
               <div className="flex items-center justify-center gap-2">
                 <div className="h-2 w-2 animate-bounce rounded-full bg-accent" style={{ animationDelay: '0ms' }}></div>
@@ -256,5 +251,17 @@ export default function CreateBottlePage() {
         </div>
       )}
     </ProtectedRoute>
+  );
+}
+
+export default function CreateBottlePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <CreateBottleForm />
+    </Suspense>
   );
 }

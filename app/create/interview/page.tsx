@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -13,7 +13,7 @@ interface QA {
   answer: string;
 }
 
-export default function InterviewPage() {
+function InterviewForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const messageType = searchParams.get('type') || 'other';
@@ -30,20 +30,16 @@ export default function InterviewPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Scroll to bottom when new messages appear
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [qaHistory, currentQuestion]);
 
-  // Auto focus textarea when loading finishes
-useEffect(() => {
-  if (!loading && !isComplete) {
-    textareaRef.current?.focus();
-  }
-}, [loading, isComplete]);
+  useEffect(() => {
+    if (!loading && !isComplete) {
+      textareaRef.current?.focus();
+    }
+  }, [loading, isComplete]);
 
-
-  // Get first question on mount
   useEffect(() => {
     if (user?.uid) {
       getNextQuestion('');
@@ -66,11 +62,8 @@ useEffect(() => {
         updatedAt: new Date(),
         ...(status === 'completed' && { completedAt: new Date() }),
       }, { merge: true });
-
-      console.log('Conversation saved to Firestore');
     } catch (error) {
       console.error('Error saving conversation:', error);
-      // Don't throw - continue even if save fails
     }
   };
 
@@ -83,13 +76,10 @@ useEffect(() => {
         return;
       }
 
-      // Build conversation history for API
       const history = qaHistory.flatMap(qa => [
         { role: 'assistant', content: qa.question },
         { role: 'user', content: qa.answer },
       ]);
-
-      console.log('Calling AI API...');
 
       const response = await fetch('/api/conversation', {
         method: 'POST',
@@ -103,8 +93,6 @@ useEffect(() => {
 
       const data = await response.json();
 
-      console.log('AI response:', data);
-
       if (data.error) {
         throw new Error(data.error);
       }
@@ -113,11 +101,7 @@ useEffect(() => {
       
       if (data.isComplete) {
         setIsComplete(true);
-        
-        // Save final conversation to Firestore
         await saveConversation(qaHistory, 'completed');
-        
-        // Wait 2 seconds then go to generation
         setTimeout(() => {
           router.push(`/create/generate?conversationId=${conversationId}`);
         }, 2000);
@@ -134,17 +118,10 @@ useEffect(() => {
     e.preventDefault();
     if (!userInput.trim() || loading) return;
 
-    // Add to history
     const newHistory = [...qaHistory, { question: currentQuestion, answer: userInput }];
     setQaHistory(newHistory);
-    
-    // Save to Firestore (don't wait)
     saveConversation(newHistory, 'in_progress');
-    
-    // Get next question
     await getNextQuestion(userInput);
-    
-    // Clear input and reset textarea height
     setUserInput('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -180,13 +157,10 @@ useEffect(() => {
             </span>
             <div className="w-14" aria-hidden="true" />
           </div>
-          {/* Progress bar */}
           <div className="h-0.5 bg-muted">
             <div
               className="h-full bg-accent transition-all duration-500"
-              style={{
-                width: `${(answeredQuestions / totalQuestions) * 100}%`,
-              }}
+              style={{ width: `${(answeredQuestions / totalQuestions) * 100}%` }}
             />
           </div>
         </header>
@@ -195,34 +169,14 @@ useEffect(() => {
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-3xl px-6 py-8">
             <div className="flex flex-col gap-6">
-              {/* Previous Q&A */}
               {qaHistory.map((qa, index) => (
                 <div key={index} className="flex flex-col gap-6">
-                  {/* AI Question */}
                   <div className="flex justify-start">
                     <div className="flex max-w-[85%] gap-3">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 16 16"
-                          fill="none"
-                          className="text-accent"
-                          aria-hidden="true"
-                        >
-                          <circle
-                            cx="8"
-                            cy="8"
-                            r="7"
-                            stroke="currentColor"
-                            strokeWidth="1.2"
-                          />
-                          <path
-                            d="M5 10C5 10 6.25 7 8 7C9.75 7 11 10 11 10"
-                            stroke="currentColor"
-                            strokeWidth="1.2"
-                            strokeLinecap="round"
-                          />
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-accent" aria-hidden="true">
+                          <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2" />
+                          <path d="M5 10C5 10 6.25 7 8 7C9.75 7 11 10 11 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                           <circle cx="8" cy="5.5" r="1" fill="currentColor" />
                         </svg>
                       </div>
@@ -231,8 +185,6 @@ useEffect(() => {
                       </div>
                     </div>
                   </div>
-
-                  {/* User Answer */}
                   <div className="flex justify-end">
                     <div className="flex max-w-[85%] flex-row-reverse gap-3">
                       <div className="rounded-2xl border border-border bg-card px-4 py-3 text-sm leading-relaxed text-foreground shadow-sm">
@@ -243,32 +195,13 @@ useEffect(() => {
                 </div>
               ))}
 
-              {/* Current Question */}
               {currentQuestion && !isComplete && (
                 <div className="flex justify-start">
                   <div className="flex max-w-[85%] gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        className="text-accent"
-                        aria-hidden="true"
-                      >
-                        <circle
-                          cx="8"
-                          cy="8"
-                          r="7"
-                          stroke="currentColor"
-                          strokeWidth="1.2"
-                        />
-                        <path
-                          d="M5 10C5 10 6.25 7 8 7C9.75 7 11 10 11 10"
-                          stroke="currentColor"
-                          strokeWidth="1.2"
-                          strokeLinecap="round"
-                        />
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-accent" aria-hidden="true">
+                        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2" />
+                        <path d="M5 10C5 10 6.25 7 8 7C9.75 7 11 10 11 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                         <circle cx="8" cy="5.5" r="1" fill="currentColor" />
                       </svg>
                     </div>
@@ -279,32 +212,13 @@ useEffect(() => {
                 </div>
               )}
 
-              {/* Loading Indicator */}
               {loading && (
                 <div className="flex justify-start">
                   <div className="flex max-w-[85%] gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        className="text-accent"
-                        aria-hidden="true"
-                      >
-                        <circle
-                          cx="8"
-                          cy="8"
-                          r="7"
-                          stroke="currentColor"
-                          strokeWidth="1.2"
-                        />
-                        <path
-                          d="M5 10C5 10 6.25 7 8 7C9.75 7 11 10 11 10"
-                          stroke="currentColor"
-                          strokeWidth="1.2"
-                          strokeLinecap="round"
-                        />
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-accent" aria-hidden="true">
+                        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2" />
+                        <path d="M5 10C5 10 6.25 7 8 7C9.75 7 11 10 11 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                         <circle cx="8" cy="5.5" r="1" fill="currentColor" />
                       </svg>
                     </div>
@@ -319,7 +233,6 @@ useEffect(() => {
                 </div>
               )}
 
-              {/* Completion Message */}
               {isComplete && (
                 <div className="text-center py-8">
                   <div className="text-6xl mb-4">✨</div>
@@ -372,5 +285,17 @@ useEffect(() => {
         )}
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function InterviewPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <InterviewForm />
+    </Suspense>
   );
 }

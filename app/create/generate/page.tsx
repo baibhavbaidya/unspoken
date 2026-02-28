@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -14,7 +14,7 @@ interface MessageVersion {
   content: string;
 }
 
-export default function GeneratePage() {
+function GenerateForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const conversationId = searchParams.get('conversationId');
@@ -42,7 +42,6 @@ export default function GeneratePage() {
     setError('');
 
     try {
-      // Get conversation from Firestore
       const conversationRef = doc(db, 'conversations', conversationId!);
       const conversationSnap = await getDoc(conversationRef);
 
@@ -60,9 +59,6 @@ export default function GeneratePage() {
         throw new Error('User not authenticated');
       }
 
-      console.log('Generating messages with Q&A history:', qaHistory);
-
-      // Call API to generate messages
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -80,7 +76,6 @@ export default function GeneratePage() {
 
       setVersions(data.versions);
 
-      // CHECK IF MESSAGE ALREADY EXISTS FOR THIS CONVERSATION
       const messagesRef = collection(db, 'messages');
       const existingQuery = query(
         messagesRef,
@@ -92,15 +87,12 @@ export default function GeneratePage() {
       let finalMessageId;
 
       if (!existingSnap.empty) {
-        // UPDATE EXISTING MESSAGE
         finalMessageId = existingSnap.docs[0].id;
         await updateDoc(doc(db, 'messages', finalMessageId), {
           versions: data.versions,
           updatedAt: new Date(),
         });
-        console.log('Updated existing message:', finalMessageId);
       } else {
-        // CREATE NEW MESSAGE
         finalMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         await setDoc(doc(db, 'messages', finalMessageId), {
           id: finalMessageId,
@@ -114,7 +106,6 @@ export default function GeneratePage() {
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        console.log('Created new message:', finalMessageId);
       }
 
       setMessageId(finalMessageId);
@@ -128,8 +119,6 @@ export default function GeneratePage() {
 
   const handleSelect = async (index: number) => {
     setSelectedVersion(index);
-    
-    // Pass messageId to edit page
     router.push(`/create/edit?messageId=${messageId}&version=${index}`);
   };
 
@@ -222,7 +211,6 @@ export default function GeneratePage() {
                   selectedVersion === index ? 'border-accent ring-2 ring-accent' : 'border-border'
                 }`}
               >
-                {/* Tone Badge */}
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-accent">
@@ -237,14 +225,12 @@ export default function GeneratePage() {
                   </div>
                 </div>
 
-                {/* Preview Text */}
                 <div className="mb-4">
                   <p className="line-clamp-6 text-sm text-muted-foreground">
                     {version.content}
                   </p>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowPreview(index)}
@@ -282,7 +268,6 @@ export default function GeneratePage() {
       {showPreview !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
           <div className="max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-card shadow-2xl border border-border">
-            {/* Modal Header */}
             <div className="border-b border-border bg-muted/50 px-6 py-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -303,7 +288,6 @@ export default function GeneratePage() {
               </div>
             </div>
 
-            {/* Modal Body */}
             <div className="max-h-[60vh] overflow-y-auto p-6">
               <div className="prose prose-sm max-w-none dark:prose-invert">
                 <p className="whitespace-pre-wrap leading-relaxed text-foreground">
@@ -312,7 +296,6 @@ export default function GeneratePage() {
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="flex gap-3 border-t border-border bg-muted/50 px-6 py-4">
               <button
                 onClick={() => setShowPreview(null)}
@@ -334,5 +317,17 @@ export default function GeneratePage() {
         </div>
       )}
     </ProtectedRoute>
+  );
+}
+
+export default function GeneratePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <GenerateForm />
+    </Suspense>
   );
 }

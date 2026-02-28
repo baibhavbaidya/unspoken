@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -23,7 +23,7 @@ const suggestions = [
   },
 ];
 
-export default function EditPage() {
+function EditForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -59,21 +59,16 @@ export default function EditPage() {
       if (messageSnap.exists()) {
         const messageData = messageSnap.data();
         
-        // If version index is provided, use that version
         if (versionIdx !== null && messageData.versions) {
           const idx = parseInt(versionIdx);
           if (messageData.versions[idx]) {
             setContent(messageData.versions[idx].content);
             setWordCount(messageData.versions[idx].content.split(/\s+/).filter((w: string) => w.length > 0).length);
           }
-        } 
-        // Otherwise use finalContent if it exists
-        else if (messageData.finalContent) {
+        } else if (messageData.finalContent) {
           setContent(messageData.finalContent);
           setWordCount(messageData.finalContent.split(/\s+/).filter((w: string) => w.length > 0).length);
-        }
-        // Or use first version as fallback
-        else if (messageData.versions && messageData.versions[0]) {
+        } else if (messageData.versions && messageData.versions[0]) {
           setContent(messageData.versions[0].content);
           setWordCount(messageData.versions[0].content.split(/\s+/).filter((w: string) => w.length > 0).length);
         }
@@ -111,9 +106,6 @@ export default function EditPage() {
         updatedAt: new Date(),
       });
 
-      console.log('Message saved!');
-      
-      // Go to delivery page
       router.push(`/create/deliver?messageId=${messageId}`);
     } catch (error) {
       console.error('Error saving:', error);
@@ -194,13 +186,8 @@ export default function EditPage() {
 
                 <div className="flex flex-col gap-4">
                   {suggestions.map((s) => (
-                    <div
-                      key={s.id}
-                      className="rounded-lg border border-border bg-background p-4"
-                    >
-                      <p className="text-xs leading-relaxed text-muted-foreground">
-                        {s.text}
-                      </p>
+                    <div key={s.id} className="rounded-lg border border-border bg-background p-4">
+                      <p className="text-xs leading-relaxed text-muted-foreground">{s.text}</p>
                     </div>
                   ))}
                 </div>
@@ -235,5 +222,17 @@ export default function EditPage() {
         </footer>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function EditPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <EditForm />
+    </Suspense>
   );
 }
